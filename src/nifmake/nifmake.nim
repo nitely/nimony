@@ -84,7 +84,7 @@ type
     cmdRun, cmdMakefile, cmdHelp, cmdVersion
 
   CliOption = enum
-    Parallel, Force, Rerun, Verbose, Profile, Report, Progress
+    Parallel, Force, Rerun, Verbose, Profile, Report, Progress, KeepGoing
 
   CmdStats = object
     sec: float
@@ -658,13 +658,16 @@ proc runDag(dag: var Dag; opt: set[CliOption]; profile: ptr ProfileData = nil;
         stdout.write "\n"
         stdout.flushFile()
       failed job.command, exitCode
-      aborted = true
+      result = false
+      # `--keep-going`: the failed node's dependents never become ready, but
+      # everything else still runs.
+      if KeepGoing notin opt: aborted = true
       inc sched.done
 
   if profile != nil:
     profile[].execWallTime += toSeconds(getMonoTime() - execStart)
-  if aborted:
-    return false
+  if not result:
+    return
 
   prog.finish()
 
@@ -860,6 +863,9 @@ Options:
   -j, --parallel[:N]    Parallel builds (for 'run'); :N caps at N processes
   --makefile:<name>     Output Makefile name (default: Makefile)
   --force               Force rebuild of all targets
+  -k, --keep-going      Keep building after a command fails instead of
+                        stopping at the first failure: only what depends on
+                        the failed command is skipped. The run still fails.
   --rerun               Run every command regardless of staleness, but KEEP the
                         existing outputs, so a tool writing OnlyIfChanged can
                         still report "unchanged" and spare everything
@@ -1016,6 +1022,7 @@ proc main() =
           if gMaxJobs < 1: quit "--parallel value must be >= 1"
       of "makefile": outputMakefile = val
       of "force": opt.incl Force
+      of "keep-going", "k": opt.incl KeepGoing
       of "rerun": opt.incl Rerun
       of "verbose": opt.incl Verbose
       of "base": baseDir = val
