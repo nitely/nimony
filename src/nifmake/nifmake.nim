@@ -710,7 +710,7 @@ proc runDag(dag: var Dag; opt: set[CliOption]; profile: ptr ProfileData = nil;
         stdout.flushFile()
       failed job.command, exitCode
       result = false
-      # `--keep-going`: the failed node's dependents never become ready, but
+      # `--keepgoing`: the failed node's dependents never become ready, but
       # everything else still runs.
       if KeepGoing notin opt: aborted = true
       inc sched.done
@@ -930,7 +930,7 @@ Options:
                         For a caller that knows the results are stale for a
                         reason no input mtime can express — e.g. nimony when
                         the compilation options changed.
-  -k, --keep-going      Keep building after a command fails instead of
+  -k, --keepgoing       Keep building after a command fails instead of
                         stopping at the first failure: only what depends on
                         the failed command is skipped. The run still fails.
   --verbose             Show verbose output
@@ -1083,7 +1083,7 @@ proc main() =
           if gMaxJobs < 1: quit "--parallel value must be >= 1"
       of "makefile": outputMakefile = val
       of "force": opt.incl Force
-      of "keep-going", "k": opt.incl KeepGoing
+      of "keepgoing", "k": opt.incl KeepGoing
       of "rerun": opt.incl Rerun
       of "verbose": opt.incl Verbose
       of "base": baseDir = val
